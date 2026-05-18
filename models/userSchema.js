@@ -1,21 +1,22 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 const userSchema = new mongoose.Schema({
     fullName:{
-        type: string,
+        type: String,
         required: true
     },
     email:{
-        type: string,
+        type: String,
         required:true,
-        uniqe:true
+        unique:true
     },
     password:{
-        type: string,
-        require:true,
+        type: String,
+        required:true,
         select: false
     },
     avatar:{
-        type: string,
+        type: String,
         default: ""
     },
     isvarified:{
@@ -23,7 +24,7 @@ const userSchema = new mongoose.Schema({
         default: false
     },
     otp:{
-        type: string,
+        type: String,
         default:null
     },
     otpExpiary:{
@@ -31,13 +32,13 @@ const userSchema = new mongoose.Schema({
 
     },
     role:{
-        type: string,
+        type: String,
         required:true,
         default: "user",
         enum: ["user","admin","modaretor"]
     },
     address:{
-        type: string,
+        type: String,
 
     }
 },
@@ -54,7 +55,7 @@ const userSchema = new mongoose.Schema({
     this.password = await bcrypt.hash(this.password, salt);
 
   } catch (error) {
-    res.status(500).send({message:"Invalied request"})
+    throw error;
   }
 });
 userSchema.methods.comparePassword = async function (password) {
