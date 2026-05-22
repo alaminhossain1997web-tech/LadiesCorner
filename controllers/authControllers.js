@@ -4,6 +4,8 @@ const {
   isvalidEmail,
   isvalidPassword,
   generateOTP,
+  generateAccessToken,
+  generateRefreshToken,
 } = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
 
@@ -109,4 +111,37 @@ const resendOtp = async (req,res) =>{
   }
 }
 
-module.exports = { registration , verifyOtp, resendOtp};
+const cookie_config = {
+        //name: 'foo',
+        // value: 'bar',
+        // path: '/',
+        // expires: new Date('Tue Jul 01 2025 06:01:11 GMT-0400 (EDT)'),
+        maxAge: 3600000,
+        // domain: '.example.com',
+        secure: false,
+        httpOnly: false,
+        // sameSite: 'strict'
+    }
+
+// Login
+const login = async (req,res)=>{
+  const {email,password} = req.body;
+  try {
+    const userData = await userSchema.findOne({email}).select("+password");
+  
+    if (!userData) return res.status(400).send({message:"Invalid Email"});
+    if (userData.isvarified === false) return res.status(400).send({message:"Email is not verified"});
+    const matchPassword = await userData.comparePassword(password);
+    if (!matchPassword) return res.status(400).send({message:"Invalid Password"});
+
+    const accToken = generateAccessToken(userData);
+    const refToken = generateRefreshToken(userData);
+    res.status(200).cookie("Acc_Tkn",accToken,cookie_config).cookie("Ref_Tkn",refToken,cookie_config).send({message:"Login Successfull"})
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({message:"Login faild"});
+    
+  }
+}
+
+module.exports = { registration , verifyOtp, resendOtp, login};
