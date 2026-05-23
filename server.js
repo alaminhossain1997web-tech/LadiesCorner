@@ -1,6 +1,7 @@
 require('dotenv').config(); 
 const express = require("express");
 const app = express();
+const cookieParser = require('cookie-parser');
 
 
 //for DNS server problem
@@ -12,9 +13,10 @@ const dbConfig = require("./configs/dbConfig");
 
 
 
-dbConfig()
+dbConfig();
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(router);
 

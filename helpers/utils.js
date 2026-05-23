@@ -24,7 +24,7 @@ const generateAccessToken = (user) => {
       email: user.email,
       role: user.role,
     },
-    process.env.SEC_KEY,
+    process.env.JWT_SEC,
     { expiresIn: "1h" },
   );
 };
@@ -37,7 +37,7 @@ const generateRefreshToken = (user) => {
       email: user.email,
       role: user.role,
     },
-    process.env.SEC_KEY,
+    process.env.JWT_SEC,
     { expiresIn: "15d" },
   );
 };

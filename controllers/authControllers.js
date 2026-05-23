@@ -62,14 +62,13 @@ const registration = async (req, res) => {
 const verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
   try {
-
     if (!email) return res.status(400).send({ message: "Email is required !" });
-    if (!otp) return res.status(400).send({ message: "Otp code is required !" });
+    if (!otp)
+      return res.status(400).send({ message: "Otp code is required !" });
 
     const userData = await userSchema.findOne({ email, isvarified: false });
 
-    if (!userData)
-       return res.status(400).send({ message: "User not found" });
+    if (!userData) return res.status(400).send({ message: "User not found" });
     if (userData.otp != otp)
       return res.status(400).send({ message: "Invalid Otp" });
     if (userData.otpExpiary < Date.now())
@@ -87,61 +86,105 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-//resend otp 
-const resendOtp = async (req,res) =>{
-  const {email} = req.body;
+//resend otp
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
   try {
-    const userData = await userSchema.findOne({email, isvarified:false});
-    if (!userData) return res.status(400).send({message:"User not found"});
-    
+    const userData = await userSchema.findOne({ email, isvarified: false });
+    if (!userData) return res.status(400).send({ message: "User not found" });
+
     const otp = generateOTP();
-    userData.otp= otp
+    userData.otp = otp;
     userData.otpExpiary = Date.now() + 5 * 60 * 1000;
-    await userData.save()
+    await userData.save();
     await mailsender({
       email,
       subject: "Verify your OTP",
       template: otpmailTemplate(otp, userData.otpExpiary),
     });
 
-    res.status(200).send({message: "New OTP send to your email"})
-
+    res.status(200).send({ message: "New OTP send to your email" });
   } catch (error) {
-    res.status(400).send({message:"Failed to resend OTP !"})
+    res.status(400).send({ message: "Failed to resend OTP !" });
   }
-}
+};
 
 const cookie_config = {
-        //name: 'foo',
-        // value: 'bar',
-        // path: '/',
-        // expires: new Date('Tue Jul 01 2025 06:01:11 GMT-0400 (EDT)'),
-        maxAge: 3600000,
-        // domain: '.example.com',
-        secure: false,
-        httpOnly: false,
-        // sameSite: 'strict'
-    }
+  //name: 'foo',
+  // value: 'bar',
+  // path: '/',
+  // expires: new Date('Tue Jul 01 2025 06:01:11 GMT-0400 (EDT)'),
+  maxAge: 3600000,
+  // domain: '.example.com',
+  secure: false,
+  httpOnly: false,
+  // sameSite: 'strict'
+};
 
 // Login
-const login = async (req,res)=>{
-  const {email,password} = req.body;
+const login = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const userData = await userSchema.findOne({email}).select("+password");
-  
-    if (!userData) return res.status(400).send({message:"Invalid Email"});
-    if (userData.isvarified === false) return res.status(400).send({message:"Email is not verified"});
+    const userData = await userSchema.findOne({ email }).select("+password");
+
+    if (!userData) return res.status(400).send({ message: "Invalid Email" });
+    if (userData.isvarified === false)
+      return res.status(400).send({ message: "Email is not verified" });
     const matchPassword = await userData.comparePassword(password);
-    if (!matchPassword) return res.status(400).send({message:"Invalid Password"});
+    if (!matchPassword)
+      return res.status(400).send({ message: "Invalid Password" });
 
     const accToken = generateAccessToken(userData);
     const refToken = generateRefreshToken(userData);
-    res.status(200).cookie("Acc_Tkn",accToken,cookie_config).cookie("Ref_Tkn",refToken,cookie_config).send({message:"Login Successfull"})
+    res
+      .status(200)
+      .cookie("Acc_Tkn", accToken, cookie_config)
+      .cookie("Ref_Tkn", refToken, cookie_config)
+      .send({ message: "Login Successfull" });
   } catch (error) {
     console.log(error);
-    res.status(400).send({message:"Login faild"});
-    
+    res.status(400).send({ message: "Login faild" });
   }
-}
+};
+const getProfile = async (req, res) => {
+  try {
 
-module.exports = { registration , verifyOtp, resendOtp, login};
+    const profileData = await userSchema
+      .findById(req.user.id)
+      .select("fullName email role avatar address");
+
+    if (!profileData) {
+      return res.status(400).send({ message: "User not Found" });
+    }
+
+    res.status(200).send(profileData);
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).send({ message: error.message });
+  }
+};
+
+//Update profile
+ const updateProfile = async (req,res)=>{
+  const {fullName, address} = req.body;
+  const avatar = req.file;
+  try {
+    const userData = await userSchema.findOne({_id: req.user.id});
+    console.log(avatar);
+    console.log(userData);
+    
+    
+    if (!userData) return res.status(400).send({messege:"user not found!"});
+
+    res.status(200).send({message:"Profile update successfull"})
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).send({ message: error.message });
+  }
+ }
+
+module.exports = { registration, verifyOtp, resendOtp, login, getProfile,  updateProfile };
