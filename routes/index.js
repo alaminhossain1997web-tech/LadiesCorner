@@ -13,3 +13,4 @@ module.exports = route;
 
 //mongodb+srv://ladiescorner:YRrq0FXs7AoWcsKm@cluster0.rswnbmr.mongodb.net/ladiescorner?appName=Cluster0
 //password://YRrq0FXs7AoWcsKm
+//37:56 s class(20)

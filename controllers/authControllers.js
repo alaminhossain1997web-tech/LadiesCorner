@@ -6,6 +6,8 @@ const {
   generateOTP,
   generateAccessToken,
   generateRefreshToken,
+  uploadtoClodinary,
+  distroyFromCloudinary,
 } = require("../helpers/utils");
 const userSchema = require("../models/userSchema");
 
@@ -146,9 +148,24 @@ const login = async (req, res) => {
     res.status(400).send({ message: "Login faild" });
   }
 };
+//Logout
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("Acc_Tkn");
+    res.clearCookie("Ref_Tkn");
+
+    res.status(200).send({
+      message: "Logout successful",
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message,
+    });
+  }
+};
+
 const getProfile = async (req, res) => {
   try {
-
     const profileData = await userSchema
       .findById(req.user.id)
       .select("fullName email role avatar address");
@@ -158,9 +175,7 @@ const getProfile = async (req, res) => {
     }
 
     res.status(200).send(profileData);
-
   } catch (error) {
-
     console.log(error);
 
     res.status(500).send({ message: error.message });
@@ -168,23 +183,57 @@ const getProfile = async (req, res) => {
 };
 
 //Update profile
- const updateProfile = async (req,res)=>{
-  const {fullName, address} = req.body;
+const updateProfile = async (req, res) => {
+  const { fullName, address } = req.body;
   const avatar = req.file;
-  try {
-    const userData = await userSchema.findOne({_id: req.user.id});
-    console.log(avatar);
-    console.log(userData);
-    
-    
-    if (!userData) return res.status(400).send({messege:"user not found!"});
 
-    res.status(200).send({message:"Profile update successfull"})
+  try {
+    const userData = await userSchema.findOne({ _id: req.user.id });
+
+    if (!userData) {
+      return res.status(400).send({ message: "User not found!" });
+    }
+
+    if (fullName && fullName.trim()) {
+      userData.fullName = fullName;
+    }
+
+    if (address && address.trim()) {
+      userData.address = address;
+    }
+
+    if (avatar) {
+      const avatarUrl = await uploadtoClodinary({
+        mimetype: avatar.mimetype,
+        imgBuffer: avatar.buffer,
+      });
+
+      if (userData.avatar) {
+        distroyFromCloudinary(userData.avatar);
+      }
+
+      userData.avatar = avatarUrl;
+    }
+
+    await userData.save();
+
+    res.status(200).send({
+      message: "Profile updated successfully",
+    });
   } catch (error) {
     console.log(error);
-
-    res.status(500).send({ message: error.message });
+    res.status(500).send({
+      message: error.message,
+    });
   }
- }
+};
 
-module.exports = { registration, verifyOtp, resendOtp, login, getProfile,  updateProfile };
+module.exports = {
+  registration,
+  verifyOtp,
+  resendOtp,
+  login,
+  logout,
+  getProfile,
+  updateProfile,
+};
